@@ -68,7 +68,8 @@ namespace ChatCommandsMono
     public class ChatManager : MonoBehaviour
     {
         public static ChatManager instance;
-        public static Action onInit;
+        public delegate (string, ChatCommand[]) onInitHandler();
+        public static event onInitHandler onInit;
         private bool isInitialized = false;
 
         private TMP_InputField inputField;
@@ -78,8 +79,6 @@ namespace ChatCommandsMono
         private GameObject tempSelected;
         private CursorLockMode tempState;
 
-        private List<Action<bool>> canvasActions = new List<Action<bool>>();
-
         private List<string> previousPrompts = new List<string>();
         private int selectedPrompt = -1;
 
@@ -88,29 +87,6 @@ namespace ChatCommandsMono
 
         private List<string> mods = new List<string>();
         private List<ChatCommand> commands = new List<ChatCommand>();
-
-        public static void Create(string GUID = null, ChatCommand[] commands = null, Action<bool> canvasAction = null)
-        {
-            if (instance == null)
-            {
-                GameObject manager = new GameObject();
-                manager.name = "ChatCommandsManager";
-                manager.AddComponent<ChatManager>();
-                DontDestroyOnLoad(manager);
-            }
-            if (!instance.isInitialized) instance.Initialize();
-            if (GUID != null && commands != null && instance.isInitialized)
-            {
-                if (instance.mods.Contains(GUID)) return;
-                instance.mods.Add(GUID);
-                foreach (ChatCommand cmd in commands)
-                {
-                    cmd.mod = GUID;
-                    instance.commands.Add(cmd);
-                }
-                if (canvasAction != null) instance.canvasActions.Add(canvasAction);
-            }
-        }
 
         void Update()
         {
@@ -122,7 +98,6 @@ namespace ChatCommandsMono
                 InputManager.GetKeyDown(Plugin.configToggle.Value)
                 )
             {
-                foreach (Action<bool> action in canvasActions) action.Invoke(canvas.enabled);
                 canvas.enabled = !canvas.enabled;
                 if (canvas.enabled)
                 {
@@ -235,9 +210,9 @@ namespace ChatCommandsMono
             });
         }
 
-        private void Initialize()
+        public void Initialize()
         {
-            if (isInitialized) return;
+            if (instance.isInitialized) return;
             AssetBundle assetBundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "assetbundle"));
             if (assetBundle == null)
             {
@@ -277,7 +252,17 @@ namespace ChatCommandsMono
                 textPrefab.transform.SetParent(gameObject.transform);
                 isInitialized = true;
                 Plugin.logger.LogMessage($"{Plugin.modName} has been initialized.".ToString());
-                onInit?.Invoke();
+                foreach (Delegate del in onInit.GetInvocationList())
+                {
+                    (string, ChatCommand[]) args = ((string, ChatCommand[]))del.DynamicInvoke();
+                    if (instance.mods.Contains(args.Item1)) continue;
+                    instance.mods.Add(args.Item1);
+                    foreach (ChatCommand cmd in args.Item2)
+                    {
+                        cmd.mod = args.Item1;
+                        instance.commands.Add(cmd);
+                    }
+                }
             }
             else Plugin.logger.LogFatal("Failed to load essential GameObjects from the asset bundle.");
         }
@@ -324,6 +309,13 @@ public class Plugin : BaseUnityPlugin
         configModifierEnabled = Config.Bind("Keybinds", "Modifier Enabled", true);
         configModifier = Config.Bind("Keybinds", "Modifier Keybind", KeyCode.LeftControl);
         configToggle = Config.Bind("Keybinds", "Toggle Keybind", KeyCode.Q);
-        Universe.Init(delegate { ChatManager.Create(); });
+        Universe.Init(delegate 
+        {
+            GameObject manager = new GameObject();
+            manager.name = "ChatCommandsManager";
+            manager.AddComponent<ChatManager>();
+            DontDestroyOnLoad(manager);
+            ChatManager.instance.Initialize();
+        });
     }
 }
