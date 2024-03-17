@@ -90,6 +90,8 @@ namespace ChatCommandsMono
         public delegate (string, ChatCommand[]) onInitHandler();
         public static event onInitHandler onInit;
         private bool isInitialized = false;
+        private bool isCreatingUI = false;
+        private AssetBundle assetBundle;
 
         private TMP_InputField inputField;
         private Canvas canvas;
@@ -111,7 +113,7 @@ namespace ChatCommandsMono
 
         void Update()
         {
-            if (!isInitialized) return;
+            if (!isInitialized && !isCreatingUI) return;
             if (Plugin.configModifierEnabled.Value 
                 ? 
                 (InputManager.GetKey(Plugin.configModifier.Value) && InputManager.GetKeyDown(Plugin.configToggle.Value)) 
@@ -236,13 +238,16 @@ namespace ChatCommandsMono
 
         private void CreateUI()
         {
+            if (isInitialized && assetBundle != null) return;
+            isCreatingUI = true;
             selectedPrompt = -1;
             if (isInitialized)
             {
                 Destroy(chatWindow);
                 Destroy(textPrefab);
             }
-            AssetBundle assetBundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "assetbundle"));
+            string location = Assembly.GetExecutingAssembly().Location;
+            assetBundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(location), Path.GetFileNameWithoutExtension(location)));
             if (assetBundle == null)
             {
                 Plugin.logger.LogFatal("An error occured while initializing. " +
@@ -304,7 +309,9 @@ namespace ChatCommandsMono
                     ChatMessage[] tempMessages = previousTexts.ToArray();
                     previousTexts.Clear();
                     foreach (ChatMessage message in tempMessages) Message(message.text, message.name, message.color, message.size, message.time);
+                    Message("Reloaded asset bundle after it was unloaded.");
                 }
+                isCreatingUI = false;
             }
             else Plugin.logger.LogFatal("Failed to load essential GameObjects from the asset bundle.");
         }
