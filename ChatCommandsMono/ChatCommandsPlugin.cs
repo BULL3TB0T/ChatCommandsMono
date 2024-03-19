@@ -114,10 +114,10 @@ namespace ChatCommandsMono
         void Update()
         {
             if (!isInitialized && !isCreatingUI) return;
-            if (ChatCommandsPlugin.configModifierEnabled.Value 
-                ? 
-                (InputManager.GetKey(ChatCommandsPlugin.configModifier.Value) && InputManager.GetKeyDown(ChatCommandsPlugin.configToggle.Value)) 
-                : 
+            if (ChatCommandsPlugin.configModifierEnabled.Value
+                ?
+                (InputManager.GetKey(ChatCommandsPlugin.configModifier.Value) && InputManager.GetKeyDown(ChatCommandsPlugin.configToggle.Value))
+                :
                 InputManager.GetKeyDown(ChatCommandsPlugin.configToggle.Value)
                 )
             {
@@ -359,7 +359,7 @@ public class ChatCommandsPlugin : BaseUnityPlugin
         configModifierEnabled = Config.Bind("Keybinds", "Modifier Enabled", true);
         configModifier = Config.Bind("Keybinds", "Modifier Button", KeyCode.LeftControl);
         configToggle = Config.Bind("Keybinds", "Toggle Button", KeyCode.Q);
-        Universe.Init(delegate 
+        Universe.Init(delegate
         {
             GameObject manager = new GameObject();
             DontDestroyOnLoad(manager);
