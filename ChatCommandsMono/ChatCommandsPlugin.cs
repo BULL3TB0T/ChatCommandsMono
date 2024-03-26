@@ -196,8 +196,8 @@ namespace ChatCommandsMono
             }
             catch (InvalidCastException)
             {
-                Dictionary<Type, object> parsers = (Dictionary<Type, object>)ChatCommands.instance.GetType().GetField("parsers", 
-                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(ChatCommands.instance);
+                Dictionary<Type, object> parsers = (Dictionary<Type, object>)ChatCommandsManager.instance.GetType().GetField("parsers", 
+                    BindingFlags.Instance | BindingFlags.NonPublic).GetValue(ChatCommandsManager.instance);
                 if (parsers.TryGetValue(typeof(T), out object parser))
                     ret = ((ChatArgumentParser<T>)parser).Parse(index, value);
                 else
@@ -288,7 +288,7 @@ namespace ChatCommandsMono
         {
             if (!IsValid())
             {
-                ChatCommands.instance.Message($"Command parameters are invalid", ChatUtility.Simplify(name), Color.red);
+                ChatCommandsManager.instance.Message($"Command parameters are invalid", ChatUtility.Simplify(name), Color.red);
                 return;
             }
             try
@@ -300,7 +300,7 @@ namespace ChatCommandsMono
                     int parameterCount = parameters.Count(x => !x.optional);
                     if (parameterCount != 0 && parameterCount > args.Length)
                     {
-                        ChatCommands.instance.Message($"Requires at least {parameterCount} argument(s)", ChatUtility.Simplify(name));
+                        ChatCommandsManager.instance.Message($"Requires at least {parameterCount} argument(s)", ChatUtility.Simplify(name));
                         return;
                     }
                     for (int i = 0; i < parameters.Length; i++)
@@ -324,18 +324,18 @@ namespace ChatCommandsMono
             }
             catch (ChatArgumentException ex)
             {
-                ChatCommands.instance.Message(ex.Message, ChatUtility.Simplify(name), ex.color);
+                ChatCommandsManager.instance.Message(ex.Message, ChatUtility.Simplify(name), ex.color);
             }
             catch (Exception ex)
             {
-                ChatCommands.instance.Message(ex.ToString(), ChatUtility.Simplify(name), Color.red);
+                ChatCommandsManager.instance.Message(ex.ToString(), ChatUtility.Simplify(name), Color.red);
             }
         }
     }
 
-    public class ChatCommands : MonoBehaviour
+    public class ChatCommandsManager : MonoBehaviour
     {
-        public static ChatCommands instance;
+        public static ChatCommandsManager instance;
         public delegate ChatPlugin onInitHandler();
         public static event onInitHandler onInit;
         private AssetBundle assetBundle;
@@ -850,7 +850,7 @@ public class ChatCommandsPlugin : BaseUnityPlugin
             GameObject manager = new GameObject();
             DontDestroyOnLoad(manager);
             manager.name = "Chat Commands";
-            ChatCommands chat = manager.AddComponent<ChatCommands>();
+            ChatCommandsManager chat = manager.AddComponent<ChatCommandsManager>();
         });
     }
 }
